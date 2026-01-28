@@ -14,9 +14,10 @@ Multi-provider usage metrics TUI for Claude, OpenAI, and GitHub Copilot.
 
 | Provider | Status | Auth Required |
 |----------|--------|---------------|
-| Claude Code | OAuth (unofficial) | `CLAUDE_CODE_OAUTH_TOKEN` |
+| Claude Code | OAuth (unofficial) | `CLAUDE_CODE_OAUTH_TOKEN` or Claude CLI |
 | OpenAI | Official API | `OPENAI_ADMIN_KEY` |
-| GitHub Copilot | Planned | `GITHUB_TOKEN` |
+| OpenAI Codex | OAuth (unofficial) | `~/.codex/auth.json` or `CODEX_ACCESS_TOKEN` |
+| GitHub Copilot | Device flow (internal API) | `usage-tui login --provider copilot` or `GITHUB_TOKEN` |
 
 ## Installation
 
@@ -30,14 +31,49 @@ pipx install .
 
 ## Configuration
 
-Set environment variables for the providers you want to use:
+### Claude Code (OAuth)
 
 ```bash
-# Claude Code OAuth token (from `claude setup-token`)
-export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
+# Install and authenticate Claude CLI
+npm install -g @anthropics/claude
+claude setup-token
 
-# OpenAI Admin API key
+# Optional: extract token (uses CLI credentials automatically)
+usage-tui login --provider claude
+
+# Or set explicitly
+export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
+```
+
+Notes:
+- Requires an OAuth token with the `user:profile` scope
+- Uses an unofficial endpoint and may change
+
+### OpenAI (Admin API)
+
+```bash
 export OPENAI_ADMIN_KEY=sk-...
+```
+
+### OpenAI Codex (ChatGPT backend)
+
+```bash
+# Install and authenticate Codex CLI
+npm install -g @openai/codex
+codex
+
+# Or set explicitly
+export CODEX_ACCESS_TOKEN=eyJ...
+```
+
+### GitHub Copilot
+
+```bash
+# Device flow login (recommended)
+usage-tui login --provider copilot
+
+# Or set a token
+export GITHUB_TOKEN=ghp_...
 ```
 
 ## Usage
@@ -80,6 +116,10 @@ usage-tui doctor
 usage-tui env
 ```
 
+Notes:
+- Default `usage-tui show` prints both 5-hour and 7-day windows for Claude and Codex
+- Use `--window` to force a single window output
+
 ## Project Structure
 
 ```
@@ -94,6 +134,8 @@ usage_tui/
     base.py        # Base provider interface
     claude_oauth.py    # Claude Code OAuth provider
     openai_usage.py    # OpenAI usage provider
+    codex.py           # OpenAI Codex usage provider
+    copilot.py         # GitHub Copilot usage provider
 ```
 
 ## Normalized Output Format
@@ -123,8 +165,9 @@ All providers return data in this normalized format:
 | Provider | Limitation |
 |----------|-----------|
 | Claude | OAuth usage endpoint is unofficial and may change |
-| Copilot | No personal usage API, requires org access |
+| Copilot | Internal API, may lag or change |
 | OpenAI | Requires organization admin API key |
+| Codex | Uses ChatGPT backend OAuth, may change |
 
 ## Development
 
