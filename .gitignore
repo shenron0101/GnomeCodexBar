@@ -1,0 +1,21 @@
+# Build artifacts
+_build/
+*.zip
+schemas/gschemas.compiled
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Logs
+.logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Coverage
+coverage/

@@ -1,0 +1,9 @@
+{
+  "uuid": "gnome-codexbar@codexbar.app",
+  "name": "CodexBar",
+  "description": "Display AI coding assistant usage limits (Codex, Claude, Cursor, Gemini, and more) with session/weekly windows, credits, and reset countdowns.",
+  "version": 1,
+  "shell-version": ["46", "47", "48", "49"],
+  "url": "https://github.com/codexbar/gnome-codexbar",
+  "settings-schema": "org.gnome.shell.extensions.gnome-codexbar"
+}

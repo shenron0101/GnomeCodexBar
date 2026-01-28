@@ -1,0 +1,20 @@
+{
+  "name": "gnome-codexbar",
+  "version": "1.0.0",
+  "description": "GNOME Shell extension for monitoring AI coding tool usage quotas",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "keywords": ["gnome", "extension", "codexbar", "ai", "quota"],
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codexbar/gnome-codexbar"
+  }
+}

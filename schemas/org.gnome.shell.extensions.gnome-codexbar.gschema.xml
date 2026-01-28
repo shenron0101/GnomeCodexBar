@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="gnome-codexbar">
+
+  <schema id="org.gnome.shell.extensions.gnome-codexbar"
+          path="/org/gnome/shell/extensions/gnome-codexbar/">
+
+    <!-- Refresh settings -->
+    <key name="refresh-interval" type="i">
+      <default>300</default>
+      <summary>Refresh interval in seconds</summary>
+      <description>How often to poll codexbar CLI. Valid values: 60, 120, 300, 900, 1800.</description>
+    </key>
+
+    <key name="refresh-on-open" type="b">
+      <default>false</default>
+      <summary>Refresh when menu opens</summary>
+      <description>Trigger a refresh each time the popup menu is opened.</description>
+    </key>
+
+    <key name="stale-after-seconds" type="i">
+      <default>600</default>
+      <summary>Stale threshold in seconds</summary>
+      <description>Data older than this is marked stale. Default is 2x refresh interval.</description>
+    </key>
+
+    <!-- Display settings -->
+    <key name="show-text" type="b">
+      <default>false</default>
+      <summary>Show text label in panel</summary>
+      <description>Display percentage text next to the icon in the panel.</description>
+    </key>
+
+    <key name="show-badge" type="b">
+      <default>true</default>
+      <summary>Show numeric badge for warnings</summary>
+      <description>Display a badge showing count of providers below warning threshold.</description>
+    </key>
+
+    <key name="reset-display-mode" type="s">
+      <default>'countdown'</default>
+      <summary>Reset time display mode</summary>
+      <description>How to display reset times: 'countdown' or 'absolute'.</description>
+    </key>
+
+    <key name="sort-mode" type="s">
+      <default>'urgent'</default>
+      <summary>Provider sort mode</summary>
+      <description>How to sort providers: 'urgent' (lowest remaining first) or 'alphabetical'.</description>
+    </key>
+
+    <key name="warning-threshold" type="i">
+      <default>20</default>
+      <summary>Warning threshold percentage</summary>
+      <description>Providers below this percentage trigger warning state.</description>
+    </key>
+
+    <key name="critical-threshold" type="i">
+      <default>5</default>
+      <summary>Critical threshold percentage</summary>
+      <description>Providers below this percentage trigger critical state.</description>
+    </key>
+
+    <!-- Provider settings -->
+    <key name="provider-visibility" type="s">
+      <default>'{}'</default>
+      <summary>Provider visibility map (JSON)</summary>
+      <description>JSON object mapping provider IDs to visibility booleans, e.g. {"codex": true, "claude": false}.</description>
+    </key>
+
+    <!-- Advanced settings -->
+    <key name="cli-path" type="s">
+      <default>''</default>
+      <summary>Custom CLI path</summary>
+      <description>Path to codexbar binary. Empty means auto-detect from PATH.</description>
+    </key>
+
+    <key name="cli-timeout" type="i">
+      <default>10</default>
+      <summary>CLI timeout in seconds</summary>
+      <description>Maximum time to wait for CLI response before timing out.</description>
+    </key>
+
+    <key name="debug-logging" type="b">
+      <default>false</default>
+      <summary>Enable debug logging</summary>
+      <description>Log verbose debug information to journal.</description>
+    </key>
+
+    <!-- Cache (internal) -->
+    <key name="cache-last-payload" type="s">
+      <default>''</default>
+      <summary>Cached CLI payload (internal)</summary>
+      <description>Last successful CLI JSON response for offline display.</description>
+    </key>
+
+    <key name="cache-last-success-ts" type="x">
+      <default>0</default>
+      <summary>Last success timestamp (internal)</summary>
+      <description>Unix timestamp of last successful CLI fetch.</description>
+    </key>
+
+    <key name="cache-last-error" type="s">
+      <default>''</default>
+      <summary>Last error message (internal)</summary>
+      <description>Error message from last failed CLI fetch.</description>
+    </key>
+
+  </schema>
+
+</schemalist>

@@ -1,0 +1,363 @@
+/**
+ * stylesheet.css - CodexBar Extension Styles
+ * 
+ * Styles for panel indicator, popup menu, and various states.
+ */
+
+/* ============================================
+   Panel Indicator
+   ============================================ */
+
+.codexbar-indicator {
+    spacing: 6px;
+    padding: 0 8px;
+    transition-duration: 200ms;
+}
+
+.codexbar-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+/* Icon states (applied via style_class) */
+.codexbar-indicator.codexbar-normal {
+    /* Default state */
+}
+
+.codexbar-indicator.codexbar-warning {
+    /* Warning accent */
+}
+
+.codexbar-indicator.codexbar-critical {
+    /* Critical accent */
+}
+
+.codexbar-indicator.codexbar-stale {
+    opacity: 0.6;
+}
+
+.codexbar-indicator.codexbar-error {
+    /* Error state */
+}
+
+.codexbar-indicator.codexbar-loading {
+    opacity: 0.7;
+}
+
+/* Label */
+.codexbar-label {
+    font-size: 10pt;
+    font-weight: 500;
+    padding-left: 4px;
+}
+
+.codexbar-label.codexbar-normal {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.codexbar-label.codexbar-warning {
+    color: #f6d32d;
+    font-weight: 600;
+}
+
+.codexbar-label.codexbar-critical {
+    color: #f66151;
+    font-weight: 700;
+}
+
+.codexbar-label.codexbar-stale {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+.codexbar-label.codexbar-error {
+    color: #f66151;
+}
+
+/* Badge */
+.codexbar-badge {
+    font-size: 8pt;
+    font-weight: 700;
+    min-width: 16px;
+    min-height: 16px;
+    border-radius: 8px;
+    padding: 0 4px;
+    margin-left: 2px;
+    text-align: center;
+}
+
+.codexbar-badge.codexbar-warning {
+    background-color: #f6d32d;
+    color: #000000;
+}
+
+.codexbar-badge.codexbar-critical {
+    background-color: #f66151;
+    color: #ffffff;
+}
+
+/* ============================================
+   Popup Menu
+   ============================================ */
+
+.codexbar-menu-header {
+    padding: 8px 12px;
+}
+
+.codexbar-menu-title {
+    font-weight: 600;
+    font-size: 11pt;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.codexbar-menu-updated {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.5);
+    margin-left: 12px;
+}
+
+/* Provider row */
+.codexbar-provider-row {
+    padding: 10px 12px;
+    spacing: 6px;
+    border-radius: 6px;
+    margin: 2px 8px;
+}
+
+.codexbar-provider-row.codexbar-normal {
+    /* Default */
+}
+
+.codexbar-provider-row.codexbar-warning {
+    background-color: rgba(246, 211, 45, 0.08);
+    border-left: 3px solid #f6d32d;
+    padding-left: 9px;
+}
+
+.codexbar-provider-row.codexbar-critical {
+    background-color: rgba(246, 97, 81, 0.08);
+    border-left: 3px solid #f66151;
+    padding-left: 9px;
+}
+
+.codexbar-provider-row.codexbar-stale {
+    opacity: 0.6;
+}
+
+.codexbar-provider-row.codexbar-error {
+    background-color: rgba(246, 97, 81, 0.05);
+}
+
+/* Provider header */
+.codexbar-provider-header {
+    spacing: 8px;
+}
+
+.codexbar-provider-icon {
+    icon-size: 16px;
+}
+
+.codexbar-provider-icon.codexbar-normal {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.codexbar-provider-icon.codexbar-warning {
+    color: #f6d32d;
+}
+
+.codexbar-provider-icon.codexbar-critical {
+    color: #f66151;
+}
+
+.codexbar-provider-name {
+    font-size: 10pt;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.codexbar-provider-percentage {
+    font-size: 10pt;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: right;
+}
+
+.codexbar-provider-percentage.codexbar-normal {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.codexbar-provider-percentage.codexbar-warning {
+    color: #f6d32d;
+}
+
+.codexbar-provider-percentage.codexbar-critical {
+    color: #f66151;
+}
+
+.codexbar-provider-percentage.codexbar-stale {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Provider details */
+.codexbar-provider-details {
+    padding-left: 24px;
+    spacing: 4px;
+    margin-top: 4px;
+}
+
+.codexbar-provider-usage {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.codexbar-provider-error {
+    font-size: 9pt;
+    color: #f66151;
+    font-style: italic;
+}
+
+.codexbar-provider-status {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.codexbar-provider-status.codexbar-status-operational {
+    color: #57e389;
+}
+
+.codexbar-provider-status.codexbar-status-degraded {
+    color: #f6d32d;
+}
+
+.codexbar-provider-status.codexbar-status-outage {
+    color: #f66151;
+}
+
+/* Window row with progress bar */
+.codexbar-window-row {
+    spacing: 8px;
+    margin: 2px 0;
+}
+
+.codexbar-window-label {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.7);
+    min-width: 50px;
+}
+
+.codexbar-window-percent {
+    font-size: 9pt;
+    font-weight: 600;
+    min-width: 32px;
+    text-align: right;
+}
+
+.codexbar-window-percent.codexbar-normal {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.codexbar-window-percent.codexbar-warning {
+    color: #f6d32d;
+}
+
+.codexbar-window-percent.codexbar-critical {
+    color: #f66151;
+}
+
+.codexbar-progress-container {
+    min-width: 80px;
+}
+
+.codexbar-progress-bg {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    height: 6px;
+    min-width: 80px;
+}
+
+.codexbar-progress-fill {
+    border-radius: 3px;
+    height: 6px;
+    transition-duration: 300ms;
+}
+
+.codexbar-progress-fill.codexbar-normal {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.codexbar-progress-fill.codexbar-warning {
+    background-color: #f6d32d;
+}
+
+.codexbar-progress-fill.codexbar-critical {
+    background-color: #f66151;
+}
+
+.codexbar-window-reset {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    margin-left: 8px;
+}
+
+/* Empty/Error states */
+.codexbar-empty-state {
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.codexbar-empty-icon {
+    icon-size: 48px;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 12px;
+}
+
+.codexbar-error-icon {
+    icon-size: 48px;
+    color: #f66151;
+    margin-bottom: 12px;
+}
+
+.codexbar-empty-title {
+    font-size: 11pt;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 8px;
+}
+
+.codexbar-empty-description {
+    font-size: 9pt;
+    color: rgba(255, 255, 255, 0.6);
+    max-width: 220px;
+}
+
+/* Footer */
+.codexbar-menu-footer {
+    padding: 8px 12px;
+    spacing: 8px;
+}
+
+.codexbar-action-button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 9pt;
+    font-weight: 500;
+    transition-duration: 150ms;
+}
+
+.codexbar-action-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.codexbar-action-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.codexbar-action-button StIcon {
+    icon-size: 14px;
+    margin-right: 4px;
+}
+
+.codexbar-action-button StLabel {
+    color: rgba(255, 255, 255, 0.9);
+}
