@@ -28,9 +28,26 @@ pip install -e .
 
 # Or with pipx
 pipx install .
+
+# Run setup wizard
+usage-tui setup
 ```
 
 ## Configuration
+
+### Quick Setup
+
+Run the interactive setup wizard:
+
+```bash
+usage-tui setup
+```
+
+This will prompt for API keys and save them to `~/.config/usage-tui/env`.
+
+The env file uses simple `KEY=value` format. Environment variables override file values.
+
+### Manual Configuration
 
 ### Claude Code (OAuth)
 

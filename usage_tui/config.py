@@ -1,10 +1,64 @@
 """Configuration management for usage-tui."""
 
 import os
+from pathlib import Path
 from typing import Any
 
 from usage_tui.claude_cli_auth import extract_claude_cli_token
 from usage_tui.providers.base import ProviderName
+
+# Env file location
+ENV_FILE_PATH = Path.home() / ".config" / "usage-tui" / "env"
+
+
+def load_env_file() -> dict[str, str]:
+    """Load key=value pairs from env file. Returns empty dict if missing/unreadable."""
+    result: dict[str, str] = {}
+    try:
+        if ENV_FILE_PATH.exists():
+            for line in ENV_FILE_PATH.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    result[key.strip()] = value.strip()
+    except (OSError, PermissionError):
+        pass
+    return result
+
+
+def write_env_file(updates: dict[str, str]) -> None:
+    """Write/update keys in env file. Preserves other lines."""
+    ENV_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    existing_lines: list[str] = []
+    existing_keys: set[str] = set()
+
+    try:
+        if ENV_FILE_PATH.exists():
+            existing_lines = ENV_FILE_PATH.read_text().splitlines()
+    except (OSError, PermissionError):
+        pass
+
+    new_lines: list[str] = []
+    for line in existing_lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            key, _, _ = stripped.partition("=")
+            key = key.strip()
+            if key in updates:
+                new_lines.append(f"{key}={updates[key]}")
+                existing_keys.add(key)
+            else:
+                new_lines.append(line)
+        else:
+            new_lines.append(line)
+
+    # Add new keys not already in file
+    for key, value in updates.items():
+        if key not in existing_keys:
+            new_lines.append(f"{key}={value}")
+
+    ENV_FILE_PATH.write_text("\n".join(new_lines) + "\n")
 
 
 class Config:
@@ -62,13 +116,21 @@ class Config:
         """
         Get authentication token for a provider.
 
-        Checks environment variables first, then provider-specific credential stores.
+        Priority: environment variable > env file > provider-specific credential stores.
         """
         env_var = self.ENV_VARS.get(provider)
+
+        # 1. Check environment variable (highest priority)
         if env_var and (token := os.environ.get(env_var)):
             return token
 
-        # Provider-specific credential stores
+        # 2. Check env file
+        if env_var:
+            env_file_values = load_env_file()
+            if token := env_file_values.get(env_var):
+                return token
+
+        # 3. Provider-specific credential stores
         if provider == ProviderName.CLAUDE:
             return extract_claude_cli_token()
 

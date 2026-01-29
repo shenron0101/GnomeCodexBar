@@ -248,6 +248,94 @@ def env() -> None:
 
 
 @main.command()
+def setup() -> None:
+    """Interactive setup wizard for API keys."""
+    from usage_tui.config import ENV_FILE_PATH, write_env_file
+
+    click.echo()
+    click.echo("Usage TUI Setup")
+    click.echo("=" * 40)
+    click.echo()
+    click.echo(f"Keys will be saved to: {ENV_FILE_PATH}")
+    click.echo("Press Enter to skip any key.")
+    click.echo()
+
+    updates: dict[str, str] = {}
+
+    # OpenRouter API key
+    click.echo(click.style("OpenRouter", bold=True))
+    click.echo("  Get your API key from: https://openrouter.ai/keys")
+    openrouter_key = click.prompt("  OPENROUTER_API_KEY", default="", show_default=False).strip()
+    if openrouter_key:
+        updates["OPENROUTER_API_KEY"] = openrouter_key
+        click.echo("  -> Set")
+    else:
+        click.echo("  -> Skipped")
+    click.echo()
+
+    # OpenAI Admin key
+    click.echo(click.style("OpenAI", bold=True))
+    click.echo("  Requires organization admin API key.")
+    click.echo("  Get it from: https://platform.openai.com/settings/organization/admin-keys")
+    openai_key = click.prompt("  OPENAI_ADMIN_KEY", default="", show_default=False).strip()
+    if openai_key:
+        updates["OPENAI_ADMIN_KEY"] = openai_key
+        click.echo("  -> Set")
+    else:
+        click.echo("  -> Skipped")
+    click.echo()
+
+    # GitHub token (optional)
+    click.echo(click.style("GitHub Copilot", bold=True))
+    click.echo("  Optional: provide a GitHub token, or use device flow login later.")
+    click.echo("  Recommended: run 'usage-tui login --provider copilot' instead.")
+    github_token = click.prompt("  GITHUB_TOKEN", default="", show_default=False).strip()
+    if github_token:
+        updates["GITHUB_TOKEN"] = github_token
+        click.echo("  -> Set")
+    else:
+        click.echo("  -> Skipped")
+    click.echo()
+
+    # Claude - print instructions only
+    click.echo(click.style("Claude Code", bold=True))
+    click.echo("  Uses Claude CLI credentials automatically.")
+    click.echo("  To set up:")
+    click.echo("    npm install -g @anthropics/claude")
+    click.echo("    claude setup-token")
+    click.echo()
+
+    # Codex - print instructions only
+    click.echo(click.style("OpenAI Codex", bold=True))
+    click.echo("  Uses Codex CLI credentials automatically.")
+    click.echo("  To set up:")
+    click.echo("    npm install -g @openai/codex")
+    click.echo("    codex")
+    click.echo()
+
+    # Write to env file
+    if updates:
+        write_env_file(updates)
+        click.echo("-" * 40)
+        click.echo(click.style("Configuration saved!", fg="green"))
+        click.echo(f"File: {ENV_FILE_PATH}")
+        click.echo()
+        click.echo("Keys saved:")
+        for key in updates:
+            click.echo(f"  {key}: set")
+    else:
+        click.echo("-" * 40)
+        click.echo("No keys provided. Nothing saved.")
+
+    click.echo()
+    click.echo("Next steps:")
+    click.echo("  usage-tui show --json")
+    click.echo("  usage-tui show")
+    click.echo("  usage-tui doctor")
+    click.echo("  usage-tui tui")
+
+
+@main.command()
 @click.option(
     "--provider",
     "-p",

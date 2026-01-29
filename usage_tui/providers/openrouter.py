@@ -112,11 +112,10 @@ class OpenRouterUsageProvider(BaseProvider):
         payload = data.get("data", {})
 
         usage = self._get_usage(payload, window)
-        byok_usage = self._get_byok_usage(payload, window)
-        combined_usage = usage + byok_usage
+        cost = usage
 
         metrics = UsageMetrics(
-            cost=combined_usage,
+            cost=cost,
             requests=None,
             input_tokens=None,
             output_tokens=None,

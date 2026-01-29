@@ -1,0 +1,63 @@
+/* Custom styles for the usage-tui extension */
+
+/* Panel button styling */
+.usage-tui-panel-button {
+    padding: 0 8px;
+}
+
+/* Provider card styling */
+.usage-tui-provider-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.usage-tui-provider-claude {
+    border-left: 3px solid #D4A574;
+}
+
+.usage-tui-provider-openai {
+    border-left: 3px solid #74AA9C;
+}
+
+.usage-tui-provider-openrouter {
+    border-left: 3px solid #FF6B35;
+}
+
+.usage-tui-provider-copilot {
+    border-left: 3px solid #6E40C9;
+}
+
+.usage-tui-provider-codex {
+    border-left: 3px solid #FF6B35;
+}
+
+/* Progress bar colors */
+.usage-tui-progress-ok {
+    background-color: #4CAF50;
+}
+
+.usage-tui-progress-warning {
+    background-color: #ff9800;
+}
+
+.usage-tui-progress-danger {
+    background-color: #f44336;
+}
+
+/* Stats styling */
+.usage-tui-stat-label {
+    font-size: 0.85em;
+    color: #cccccc;
+}
+
+.usage-tui-stat-value {
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Error styling */
+.usage-tui-error {
+    color: #f44336;
+    font-size: 0.8em;
+}
