@@ -1,6 +1,6 @@
 # Usage TUI
 
-Multi-provider usage metrics TUI for Claude, OpenAI, and GitHub Copilot.
+Multi-provider usage metrics TUI for Claude, OpenAI, OpenRouter, GitHub Copilot, and Codex.
 
 ## Features
 
@@ -16,6 +16,7 @@ Multi-provider usage metrics TUI for Claude, OpenAI, and GitHub Copilot.
 |----------|--------|---------------|
 | Claude Code | OAuth (unofficial) | `CLAUDE_CODE_OAUTH_TOKEN` or Claude CLI |
 | OpenAI | Official API | `OPENAI_ADMIN_KEY` |
+| OpenRouter | Official API | `OPENROUTER_API_KEY` |
 | OpenAI Codex | OAuth (unofficial) | `~/.codex/auth.json` or `CODEX_ACCESS_TOKEN` |
 | GitHub Copilot | Device flow (internal API) | `usage-tui login --provider copilot` or `GITHUB_TOKEN` |
 
@@ -48,11 +49,18 @@ export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
 Notes:
 - Requires an OAuth token with the `user:profile` scope
 - Uses an unofficial endpoint and may change
+- Recommended: use Claude CLI credentials (unset `CLAUDE_CODE_OAUTH_TOKEN` unless you need to override)
 
 ### OpenAI (Admin API)
 
 ```bash
 export OPENAI_ADMIN_KEY=sk-...
+```
+
+### OpenRouter
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...
 ```
 
 ### OpenAI Codex (ChatGPT backend)
@@ -64,6 +72,8 @@ codex
 
 # Or set explicitly
 export CODEX_ACCESS_TOKEN=eyJ...
+
+Recommended: use Codex CLI credentials unless you need to override
 ```
 
 ### GitHub Copilot
@@ -74,6 +84,8 @@ usage-tui login --provider copilot
 
 # Or set a token
 export GITHUB_TOKEN=ghp_...
+
+Recommended: use device flow login (avoids managing tokens)
 ```
 
 ## Usage

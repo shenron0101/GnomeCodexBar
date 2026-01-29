@@ -18,6 +18,7 @@ venv/
 
 .env
 .env.*
+!.env.example
 
 *.log
 *.sqlite3
