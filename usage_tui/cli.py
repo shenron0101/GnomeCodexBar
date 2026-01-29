@@ -15,7 +15,7 @@ from usage_tui.providers import (
     CopilotProvider,
     CodexProvider,
 )
-from usage_tui.providers.base import BaseProvider, ProviderName, WindowPeriod
+from usage_tui.providers.base import BaseProvider, ProviderError, ProviderName, WindowPeriod
 
 
 def get_providers() -> dict[ProviderName, BaseProvider]:
@@ -50,6 +50,16 @@ def parse_provider(provider: str) -> ProviderName | None:
     except ValueError:
         valid = ", ".join([p.value for p in ProviderName] + ["all"])
         raise click.BadParameter(f"Invalid provider. Choose from: {valid}")
+
+
+def _fetch_result(provider: BaseProvider, window: WindowPeriod):
+    """Fetch provider metrics, converting errors into results."""
+    try:
+        return asyncio.run(provider.fetch(window))
+    except ProviderError as exc:
+        return provider._make_error_result(window=window, error=str(exc))
+    except Exception as exc:
+        return provider._make_error_result(window=window, error=f"Unexpected error: {exc}")
 
 
 @click.group()
@@ -111,13 +121,13 @@ def show(provider: str, window: str, output_json: bool) -> None:
         )
 
         if show_dual_windows:
-            result_5h = asyncio.run(prov.fetch(WindowPeriod.HOUR_5))
-            result_7d = asyncio.run(prov.fetch(WindowPeriod.DAY_7))
+            result_5h = _fetch_result(prov, WindowPeriod.HOUR_5)
+            result_7d = _fetch_result(prov, WindowPeriod.DAY_7)
             results[name.value] = result_7d
             _print_result(name, result_5h, label="5h")
             _print_result(name, result_7d, label="7d")
         else:
-            result = asyncio.run(prov.fetch(window_period))
+            result = _fetch_result(prov, window_period)
             results[name.value] = result
             if not output_json:
                 _print_result(name, result)
@@ -208,16 +218,12 @@ def doctor() -> None:
 
         # Test connectivity
         click.echo("  Testing:    ", nl=False)
-        try:
-            result = asyncio.run(provider.fetch(WindowPeriod.HOUR_5))
-            if result.is_error:
-                click.echo(click.style(f"FAILED - {result.error}", fg="red"))
-                all_ok = False
-            else:
-                click.echo(click.style("OK", fg="green"))
-        except Exception as e:
-            click.echo(click.style(f"ERROR - {e}", fg="red"))
+        result = _fetch_result(provider, WindowPeriod.HOUR_5)
+        if result.is_error:
+            click.echo(click.style(f"FAILED - {result.error}", fg="red"))
             all_ok = False
+        else:
+            click.echo(click.style("OK", fg="green"))
 
         # Show notes
         if info.get("note"):
