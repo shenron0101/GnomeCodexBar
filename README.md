@@ -1,14 +1,34 @@
-# Usage TUI
+# gnomecodexbar
 
-Multi-provider usage metrics TUI for Claude, OpenAI, OpenRouter, GitHub Copilot, and Codex.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-4C1?style=flat-square" alt="License: Apache-2.0">
+  <img src="https://img.shields.io/badge/TUI-Textual-00A1FF?style=flat-square&logo=terminal&logoColor=white" alt="Textual">
+  <img src="https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-555?style=flat-square" alt="Platforms">
+</p>
+
+<p align="center">
+  <strong>Unified AI usage metrics in a fast terminal UI.</strong><br>
+  Claude, OpenAI, OpenRouter, GitHub Copilot, and Codex, side by side.
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> |
+  <a href="#features">Features</a> |
+  <a href="#supported-providers">Providers</a> |
+  <a href="#screenshots">Screenshots</a> |
+  <a href="#contributing">Contributing</a>
+</p>
 
 ## Features
 
-- View usage/quota/cost metrics across multiple AI providers
-- Interactive TUI with Textual
-- CLI commands for scripting and automation
-- Caching to reduce API calls
-- Provider-agnostic normalized output format
+- Interactive TUI built with Textual
+- Unified dashboard across multiple providers
+- Scriptable CLI with JSON output
+- Cached requests to reduce API calls
+- Normalized output format for automation
+- Optional GNOME Shell extension in `extension/`
+- Multiple time windows (5h, 7d, 30d)
 
 ## Supported Providers
 
@@ -20,7 +40,7 @@ Multi-provider usage metrics TUI for Claude, OpenAI, OpenRouter, GitHub Copilot,
 | OpenAI Codex | OAuth (unofficial) | `~/.codex/auth.json` or `CODEX_ACCESS_TOKEN` |
 | GitHub Copilot | Device flow (internal API) | `usage-tui login --provider copilot` or `GITHUB_TOKEN` |
 
-## Installation
+## Quick Start
 
 ```bash
 # From source
@@ -32,6 +52,67 @@ pipx install .
 # Run setup wizard
 usage-tui setup
 ```
+
+### One-line setup for each provider
+
+```bash
+# Claude Code (uses existing CLI auth)
+claude setup-token
+
+# GitHub Copilot (device flow)
+usage-tui login --provider copilot
+
+# OpenAI / OpenRouter (set env vars)
+export OPENAI_ADMIN_KEY=sk-...
+export OPENROUTER_API_KEY=sk-or-...
+```
+
+## Usage
+
+### Interactive TUI
+
+```bash
+usage-tui tui
+```
+
+Keyboard shortcuts:
+- `r` - Refresh data
+- `5` - Switch to 5 hour window
+- `7` - Switch to 7 day window
+- `j` - Toggle raw JSON view
+- `q` - Quit
+
+### CLI Commands
+
+```bash
+# Show all providers
+usage-tui show
+
+# Show specific provider
+usage-tui show --provider claude
+usage-tui show --provider openai
+
+# Change time window
+usage-tui show --window 5h
+usage-tui show --window 30d
+
+# Output as JSON (for scripting)
+usage-tui show --json
+
+# Check configuration
+usage-tui doctor
+
+# Show required env vars
+usage-tui env
+```
+
+Notes:
+- Default `usage-tui show` prints both 5-hour and 7-day windows for Claude and Codex
+- Use `--window` to force a single window output
+
+## Screenshots
+
+![usage-tui demo](assets/usage-tui-demo.png)
 
 ## Configuration
 
@@ -105,49 +186,6 @@ export GITHUB_TOKEN=ghp_...
 Recommended: use device flow login (avoids managing tokens)
 ```
 
-## Usage
-
-### Interactive TUI
-
-```bash
-usage-tui tui
-```
-
-**Keyboard shortcuts:**
-- `r` - Refresh data
-- `5` - Switch to 5 hour window
-- `7` - Switch to 7 day window  
-- `j` - Toggle raw JSON view
-- `q` - Quit
-
-### CLI Commands
-
-```bash
-# Show all providers
-usage-tui show
-
-# Show specific provider
-usage-tui show --provider claude
-usage-tui show --provider openai
-
-# Change time window
-usage-tui show --window 5h
-usage-tui show --window 30d
-
-# Output as JSON (for scripting)
-usage-tui show --json
-
-# Check configuration
-usage-tui doctor
-
-# Show required env vars
-usage-tui env
-```
-
-Notes:
-- Default `usage-tui show` prints both 5-hour and 7-day windows for Claude and Codex
-- Use `--window` to force a single window output
-
 ## Project Structure
 
 ```
@@ -164,6 +202,20 @@ usage_tui/
     openai_usage.py    # OpenAI usage provider
     codex.py           # OpenAI Codex usage provider
     copilot.py         # GitHub Copilot usage provider
+```
+
+## Architecture
+
+```text
++---------------------------------------+
+|             usage-tui CLI             |
+|  CLI layer  |  TUI layer  |  GNOME UI |
++----------------------+----------------+
+|        Provider cache and config      |
++----------------------+----------------+
+| Claude | OpenAI | OpenRouter | Copilot |
+| Codex  | adapters with normalized data |
++---------------------------------------+
 ```
 
 ## Normalized Output Format
@@ -188,16 +240,35 @@ All providers return data in this normalized format:
 }
 ```
 
-## Known Limitations
+## Roadmap
 
-| Provider | Limitation |
-|----------|-----------|
-| Claude | OAuth usage endpoint is unofficial and may change |
-| Copilot | Internal API, may lag or change |
-| OpenAI | Requires organization admin API key |
-| Codex | Uses ChatGPT backend OAuth, may change |
+Now:
+- [x] TUI dashboard
+- [x] Provider adapters for Claude, OpenAI, OpenRouter, Copilot, Codex
+- [x] JSON output for automation
 
-## Development
+Next:
+- [ ] Waybar / i3blocks output mode
+- [ ] Prometheus exporter
+- [ ] Daily usage ledger
+- [ ] Budget alerts
+
+Later:
+- [ ] Optional local web dashboard
+- [ ] Team and org multi-account support
+- [ ] Notifications (Slack or Discord)
+
+## Contributing
+
+We welcome contributions of all sizes. A few great ways to help:
+
+- Add a provider adapter in `usage_tui/providers/`
+- Improve documentation and examples
+- Add tests for provider parsing
+- Add UI polish to the TUI
+- Extend desktop integrations
+
+Development setup:
 
 ```bash
 # Install dev dependencies
@@ -213,13 +284,22 @@ mypy usage_tui
 pytest
 ```
 
-## Future Extensions
+Manual smoke checks for UI and CLI changes:
 
-- GNOME extension (poll localhost daemon)
-- Waybar / i3blocks output mode
-- Prometheus exporter
-- Unified daily usage ledger
+```bash
+usage-tui show
+usage-tui tui
+```
+
+## Known Limitations
+
+| Provider | Limitation |
+|----------|------------|
+| Claude | OAuth usage endpoint is unofficial and may change |
+| Copilot | Internal API, may lag or change |
+| OpenAI | Requires organization admin API key |
+| Codex | Uses ChatGPT backend OAuth, may change |
 
 ## License
 
-MIT
+Apache-2.0. See `LICENSE`.
