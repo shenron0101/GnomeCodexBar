@@ -16,6 +16,7 @@
   <a href="#quick-start">Quick Start</a> |
   <a href="#features">Features</a> |
   <a href="#supported-providers">Providers</a> |
+  <a href="#gnome-shell-extension">GNOME Extension</a> |
   <a href="#screenshots">Screenshots</a> |
   <a href="#contributing">Contributing</a>
 </p>
@@ -113,6 +114,71 @@ Notes:
 ## Screenshots
 
 ![usage-tui demo](assets/usage-tui-demo.png)
+
+## GNOME Shell Extension
+
+The optional GNOME Shell extension displays AI usage metrics directly in your top panel.
+
+### Requirements
+
+- GNOME Shell 45, 46, 47, or 48
+- `usage-tui` CLI installed and configured
+
+### Installation
+
+```bash
+# Create the extension directory
+mkdir -p ~/.local/share/gnome-shell/extensions/usage-tui@gnome.codexbar
+
+# Copy extension files
+cp extension/* ~/.local/share/gnome-shell/extensions/usage-tui@gnome.codexbar/
+```
+
+### Enabling the Extension
+
+After copying the files, GNOME Shell must be restarted to detect the new extension.
+
+**X11 Session:**
+```bash
+# Press Alt+F2, type 'r', press Enter
+# Or run:
+busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Reloading…")'
+```
+
+**Wayland Session:**
+```bash
+# Log out and log back in (GNOME Shell cannot be restarted on Wayland)
+```
+
+**After restarting GNOME Shell:**
+```bash
+# Enable the extension
+gnome-extensions enable usage-tui@gnome.codexbar
+
+# Verify it's active
+gnome-extensions info usage-tui@gnome.codexbar
+```
+
+### Development
+
+Use the included dev script for extension development:
+
+```bash
+cd extension
+
+# Enable/disable extension
+./dev.sh enable
+./dev.sh disable
+
+# Reload extension (disable + enable)
+./dev.sh reload
+
+# View extension logs
+./dev.sh logs
+
+# Start nested GNOME Shell for testing (Wayland)
+./dev.sh start
+```
 
 ## Configuration
 
