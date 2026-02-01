@@ -1,10 +1,10 @@
 {
   "uuid": "usage-tui@gnome.codexbar",
-  "name": "usage-tui Monitor",
-  "description": "Display AI service usage metrics (Claude, OpenAI, OpenRouter, Copilot, Codex) in the top panel",
-  "version": 1,
+  "name": "Usage TUI Monitor",
+  "description": "Display AI service usage metrics (Claude, OpenAI, OpenRouter, Copilot, Codex) in the GNOME top panel. Track your API quotas and credits at a glance.",
+  "version": 2,
   "shell-version": ["45", "46", "47", "48"],
-  "url": "https://github.com/shobhitpachauri/usage-tui",
+  "url": "https://github.com/OmegAshEnr01n/GnomeCodexBar",
   "settings-schema": "org.gnome.shell.extensions.usage-tui",
   "gettext-domain": "usage-tui"
 }

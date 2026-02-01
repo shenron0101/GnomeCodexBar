@@ -9,6 +9,10 @@ on:
         default: false
   release:
     types: [published]
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
 
 permissions:
   contents: write
@@ -30,7 +34,7 @@ jobs:
         run: |
           mkdir -p "$DIST_DIR"
           cd "$EXT_DIR"
-          zip -r "../$DIST_DIR/$EXT_ZIP" . -x "dev.sh"
+          zip -r "../$DIST_DIR/$EXT_ZIP" . -x "dev.sh" -x "*.md"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -45,11 +49,15 @@ jobs:
           files: dist/${{ env.EXT_ZIP }}
 
       - name: Upload to extensions.gnome.org
-        if: (github.event_name == 'release' || github.event.inputs.upload_ego == 'true') && secrets.EGO_USERNAME != '' && secrets.EGO_PASSWORD != ''
+        if: github.event_name == 'release' || github.event.inputs.upload_ego == 'true'
         env:
           EGO_USERNAME: ${{ secrets.EGO_USERNAME }}
           EGO_PASSWORD: ${{ secrets.EGO_PASSWORD }}
         run: |
+          if [ -z "$EGO_USERNAME" ] || [ -z "$EGO_PASSWORD" ]; then
+            echo "⚠️ EGO credentials not set - skipping upload to extensions.gnome.org"
+            exit 0
+          fi
           sudo apt-get update
           sudo apt-get install -y gnome-shell
           gnome-extensions upload --user "$EGO_USERNAME" --password "$EGO_PASSWORD" "$DIST_DIR/$EXT_ZIP"

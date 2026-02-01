@@ -112,24 +112,27 @@ const PROVIDER_COLORS = {
  */
 const UsageTuiIndicator = GObject.registerClass(
 class UsageTuiIndicator extends PanelMenu.Button {
-    
+
     _init() {
         super._init(0.0, 'usage-tui Monitor', false);
-        
+
         this._timeout = null;
         this._usageData = {};
         this._providerRows = {};
+        this._providerTabs = {};
         this._lastUpdated = null;
-        
+        this._activeProvider = null;
+        this._providerOrder = ['claude', 'openrouter', 'copilot', 'codex'];
+
         // Build the panel button
         this._buildPanelButton();
-        
+
         // Build the dropdown menu
         this._buildPopupMenu();
-        
+
         // Initial data fetch
         this._refreshData();
-        
+
         // Set up auto-refresh timer
         this._startAutoRefresh();
     }
@@ -167,52 +170,55 @@ class UsageTuiIndicator extends PanelMenu.Button {
         // ===== HEADER SECTION (compact) =====
         let headerBox = new St.BoxLayout({
             vertical: false,
-            style: 'padding: 6px 8px; spacing: 8px;',
+            style: 'padding: 4px 8px; spacing: 6px;',
         });
-        
+
         let headerIcon = new St.Icon({
             icon_name: 'utilities-system-monitor-symbolic',
             icon_size: 20,
         });
-        
+
         let headerLabel = new St.Label({
             text: 'usage-tui',
             style: 'font-weight: bold; font-size: 1.1em;',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        
+
         headerBox.add_child(headerIcon);
         headerBox.add_child(headerLabel);
-        
+
         let headerItem = new PopupMenu.PopupBaseMenuItem({ reactive: false });
         headerItem.add_child(headerBox);
         this.menu.addMenuItem(headerItem);
-        
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        
-        // ===== PROVIDERS CONTAINER WITH SCROLL =====
+
+        // ===== TAB BAR =====
+        this._tabBar = new St.BoxLayout({
+            vertical: false,
+            style: 'padding: 4px 10px 0px 8px; spacing: 0px;',
+        });
+
+        let tabBarItem = new PopupMenu.PopupBaseMenuItem({ reactive: false });
+        tabBarItem.add_child(this._tabBar);
+        this.menu.addMenuItem(tabBarItem);
+
+        let separator1 = new PopupMenu.PopupSeparatorMenuItem();
+        separator1.style = 'margin: 0px;';
+        this.menu.addMenuItem(separator1);
+
+        // ===== PROVIDER CARD CONTAINER (single card at a time) =====
         this._providersContainer = new St.BoxLayout({
             vertical: true,
-            style: 'padding: 6px 10px; spacing: 6px;',
+            x_expand: true,
+            style: 'padding: 2px 12px; spacing: 8px; min-width: 260px;',
         });
-        
-        // Get screen height for max height calculation (80%)
-        let monitor = Main.layoutManager.primaryMonitor;
-        let maxHeight = monitor ? Math.floor(monitor.height * 0.8) : 600;
-        
-        this._scrollView = new St.ScrollView({
-            style: `max-height: ${maxHeight}px;`,
-            hscrollbar_policy: St.PolicyType.NEVER,
-            vscrollbar_policy: St.PolicyType.AUTOMATIC,
-            overlay_scrollbars: true,
-        });
-        this._scrollView.add_child(this._providersContainer);
-        
+
         let providersItem = new PopupMenu.PopupBaseMenuItem({ reactive: false });
-        providersItem.add_child(this._scrollView);
+        providersItem.add_child(this._providersContainer);
         this.menu.addMenuItem(providersItem);
-        
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        let separator2 = new PopupMenu.PopupSeparatorMenuItem();
+        separator2.style = 'margin: 0px;';
+        this.menu.addMenuItem(separator2);
         
         // ===== ACTION BUTTONS SECTION =====
         
@@ -241,18 +247,95 @@ class UsageTuiIndicator extends PanelMenu.Button {
     }
     
     /**
+     * Create a tab button for a provider
+     */
+    _createTab(providerName) {
+        let color = PROVIDER_COLORS[providerName] || '#888';
+
+        let tab = new St.Button({
+            style: `
+                padding: 5px 10px;
+                border-radius: 4px 4px 0 0;
+                background-color: rgba(255, 255, 255, 0.05);
+                border: none;
+                margin-right: 2px;
+            `,
+            can_focus: true,
+        });
+
+        let tabLabel = new St.Label({
+            text: providerName.toUpperCase(),
+            style: `
+                font-size: 0.8em;
+                font-weight: bold;
+                color: ${color};
+            `,
+        });
+
+        tab.set_child(tabLabel);
+
+        tab.connect('clicked', () => {
+            this._switchToProvider(providerName);
+        });
+
+        return { button: tab, label: tabLabel, color };
+    }
+
+    /**
+     * Switch to showing a specific provider's card
+     */
+    _switchToProvider(providerName) {
+        if (this._activeProvider === providerName) {
+            return;
+        }
+
+        this._activeProvider = providerName;
+
+        // Update tab styling
+        for (let [name, tabData] of Object.entries(this._providerTabs)) {
+            let isActive = name === providerName;
+            tabData.button.style = `
+                padding: 5px 10px;
+                border-radius: 4px 4px 0 0;
+                background-color: ${isActive ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.05)'};
+                border: none;
+                margin-right: 2px;
+                ${isActive ? 'border-bottom: 2px solid ' + tabData.color + ';' : ''}
+            `;
+        }
+
+        // Show only the active provider's card and refresh with stored data
+        for (let [name, card] of Object.entries(this._providerRows)) {
+            if (name === providerName) {
+                card.container.show();
+                // Re-populate card with stored data to ensure everything is updated
+                if (this._usageData[name]) {
+                    this._populateProviderCard(card, name, this._usageData[name]);
+                }
+            } else {
+                card.container.hide();
+            }
+        }
+    }
+
+    /**
      * Create or update a provider card
      */
     _updateProviderCard(providerName, data) {
         let card = this._providerRows[providerName];
-        
+
         if (!card) {
             // Create new card
             card = this._createProviderCard(providerName);
             this._providerRows[providerName] = card;
             this._providersContainer.add_child(card.container);
+
+            // Hide initially if not the active provider
+            if (this._activeProvider && this._activeProvider !== providerName) {
+                card.container.hide();
+            }
         }
-        
+
         // Update card with data
         this._populateProviderCard(card, providerName, data);
     }
@@ -262,106 +345,106 @@ class UsageTuiIndicator extends PanelMenu.Button {
      */
     _createProviderCard(providerName) {
         let color = PROVIDER_COLORS[providerName] || '#888';
-        
-        // Card container (compact)
+
+        // Card container - clean, full width, snug fit
         let container = new St.BoxLayout({
             vertical: true,
+            x_expand: true,
             style: `
-                background-color: rgba(255, 255, 255, 0.05);
+                background-color: rgba(255, 255, 255, 0.03);
                 border-radius: 6px;
-                padding: 6px 8px;
+                padding: 8px 5px 5px 5px;
                 border-left: 3px solid ${color};
             `,
         });
-        
-        // Provider name header (compact)
+
+        // Provider name header - hidden since we have tabs
         let header = new St.Label({
             text: providerName.toUpperCase(),
-            style: `
-                font-weight: bold;
-                font-size: 0.85em;
-                color: ${color};
-                margin-bottom: 3px;
-            `,
         });
+        header.hide();
         container.add_child(header);
-        
-        // Progress bar for quota-based providers (compact)
+
+        // Progress bar for quota-based providers
         let progressContainer = new St.BoxLayout({
             vertical: false,
-            style: 'spacing: 6px; margin-bottom: 3px;',
+            x_expand: true,
+            style: 'spacing: 8px; margin-bottom: 4px;',
         });
-        
+
         let progressBg = new St.BoxLayout({
-            style: 'background-color: #404040; border-radius: 2px; height: 5px;',
+            style: 'background-color: #3a3a3a; border-radius: 3px; height: 6px;',
             x_expand: true,
         });
-        
+
         let progressFill = new St.Widget({
-            style: `background-color: ${color}; border-radius: 2px; height: 5px; width: 0px;`,
+            style: `background-color: ${color}; border-radius: 3px; height: 6px; width: 0px;`,
         });
-        
+
         progressBg.add_child(progressFill);
         progressContainer.add_child(progressBg);
-        
+
         let progressLabel = new St.Label({
             text: '',
-            style: 'font-size: 0.75em; color: #888; min-width: 35px;',
+            style: 'font-size: 0.9em; color: #aaa; min-width: 42px;',
         });
         progressContainer.add_child(progressLabel);
-        
+
         container.add_child(progressContainer);
 
-        // Window-specific progress bars (5h / 7d) with reset labels (compact)
+        // Window-specific progress bars (5h / 7d) with reset labels
         const createWindowBar = (labelText) => {
-            let container = new St.BoxLayout({
+            let barContainer = new St.BoxLayout({
                 vertical: true,
-                style: 'spacing: 1px;'
+                x_expand: true,
+                style: 'spacing: 2px; margin-bottom: 4px;',
             });
 
             let row = new St.BoxLayout({
                 vertical: false,
-                style: 'spacing: 4px;'
+                x_expand: true,
+                style: 'spacing: 6px;',
             });
 
             let label = new St.Label({
                 text: labelText,
-                style: 'font-size: 0.7em; color: #888; min-width: 20px;'
+                style: 'font-size: 0.85em; color: #999; min-width: 20px; font-weight: bold;',
             });
 
             let barBg = new St.BoxLayout({
-                style: 'background-color: #404040; border-radius: 2px; height: 5px;',
+                style: 'background-color: #3a3a3a; border-radius: 3px; height: 6px;',
                 x_expand: true,
             });
 
             let barFill = new St.Widget({
-                style: `background-color: ${color}; border-radius: 2px; height: 5px; width: 0px;`,
+                style: `background-color: ${color}; border-radius: 3px; height: 6px; width: 0px;`,
             });
 
             let pctLabel = new St.Label({
                 text: '',
-                style: 'font-size: 0.7em; color: #888; min-width: 32px;'
+                style: 'font-size: 0.9em; color: #aaa; min-width: 42px;',
             });
 
             let resetLabel = new St.Label({
                 text: '',
-                style: 'font-size: 0.65em; color: #666; margin-left: 24px;'
+                style: 'font-size: 0.8em; color: #888; margin-left: 26px;',
             });
 
             barBg.add_child(barFill);
             row.add_child(label);
             row.add_child(barBg);
             row.add_child(pctLabel);
-            container.add_child(row);
-            container.add_child(resetLabel);
-            container.hide();
+            barContainer.add_child(row);
+            barContainer.add_child(resetLabel);
+            barContainer.hide();
 
-            return { container, row, barFill, pctLabel, resetLabel };
+            return { container: barContainer, row, barBg, barFill, pctLabel, resetLabel };
         };
 
         let windowBars = new St.BoxLayout({
             vertical: true,
-            style: 'spacing: 2px; margin-bottom: 3px;',
+            x_expand: true,
+            style: 'spacing: 2px;',
         });
 
         let fiveHourBar = createWindowBar('5h');
@@ -372,19 +455,19 @@ class UsageTuiIndicator extends PanelMenu.Button {
         windowBars.hide();
 
         container.add_child(windowBars);
-        
-        // Stats grid (compact)
+
+        // Stats section
         let statsGrid = new St.BoxLayout({
             vertical: true,
-            style: 'spacing: 1px;',
+            style: 'spacing: 2px; margin-top: 4px;',
         });
-        
-        let costLabel = new St.Label({ style: 'font-size: 0.8em;' });
-        let byokLabel = new St.Label({ style: 'font-size: 0.8em;' });
-        let requestsLabel = new St.Label({ style: 'font-size: 0.8em;' });
-        let tokensLabel = new St.Label({ style: 'font-size: 0.8em;' });
-        let resetsLabel = new St.Label({ style: 'font-size: 0.75em; color: #888; margin-top: 2px;' });
-        let errorLabel = new St.Label({ style: 'font-size: 0.75em; color: #f44336; margin-top: 2px;' });
+
+        let costLabel = new St.Label({ style: 'font-size: 0.95em; color: #ddd;' });
+        let byokLabel = new St.Label({ style: 'font-size: 0.85em; color: #aaa;' });
+        let requestsLabel = new St.Label({ style: 'font-size: 0.85em; color: #aaa;' });
+        let tokensLabel = new St.Label({ style: 'font-size: 0.85em; color: #aaa;' });
+        let resetsLabel = new St.Label({ style: 'font-size: 0.85em; color: #888; margin-top: 2px;' });
+        let errorLabel = new St.Label({ style: 'font-size: 0.85em; color: #f44336; margin-top: 2px;' });
         
         statsGrid.add_child(costLabel);
         statsGrid.add_child(byokLabel);
@@ -394,11 +477,12 @@ class UsageTuiIndicator extends PanelMenu.Button {
         statsGrid.add_child(errorLabel);
         
         container.add_child(statsGrid);
-        
+
         return {
             container,
             header,
             progressContainer,
+            progressBg,
             progressFill,
             progressLabel,
             windowBars,
@@ -410,6 +494,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
             tokensLabel,
             resetsLabel,
             errorLabel,
+            _barData: {}, // Store bar percentages for refresh on tab switch
         };
     }
     
@@ -462,24 +547,32 @@ class UsageTuiIndicator extends PanelMenu.Button {
         };
 
         const updateWindowBar = (bar, pct, resetTime, useDays) => {
-            let width = Math.round(pct * 2);
             let color = getProgressColor(pct);
-            bar.barFill.style = `
-                background-color: ${color};
-                border-radius: 2px;
-                height: 5px;
-                width: ${width}px;
-            `;
+
+            // Update percentage label immediately
             bar.pctLabel.text = `${pct.toFixed(1)}%`;
-            
+
+            // Defer width calculation until after layout
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                let barBgWidth = bar.barBg.get_width();
+                if (barBgWidth > 0) {
+                    let width = Math.round((pct / 100) * barBgWidth);
+                    bar.barFill.style = `
+                        background-color: ${color};
+                        border-radius: 3px;
+                        height: 6px;
+                        width: ${width}px;
+                    `;
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+
             // Format reset time
             if (resetTime) {
                 let resetDate;
                 if (typeof resetTime === 'number') {
-                    // Epoch seconds (Codex)
                     resetDate = new Date(resetTime * 1000);
                 } else {
-                    // ISO string (Claude)
                     resetDate = new Date(resetTime);
                 }
                 let now = new Date();
@@ -489,11 +582,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
                     let hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     let mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
                     if (useDays && days > 0) {
-                        bar.resetLabel.text = `Resets in ${days}d ${hours}h ${mins}m`;
+                        bar.resetLabel.text = `⏱ Resets in ${days}d ${hours}h ${mins}m`;
                     } else {
-                        // For 5h window, show total hours (no days)
                         let totalHours = days * 24 + hours;
-                        bar.resetLabel.text = `Resets in ${totalHours}h ${mins}m`;
+                        bar.resetLabel.text = `⏱ Resets in ${totalHours}h ${mins}m`;
                     }
                     bar.resetLabel.show();
                 } else {
@@ -504,7 +596,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
                 bar.resetLabel.text = '';
                 bar.resetLabel.hide();
             }
-            
+
             bar.container.show();
         };
 
@@ -530,16 +622,20 @@ class UsageTuiIndicator extends PanelMenu.Button {
 
         let hasWindowBars = false;
         if (fiveHourUtil !== null) {
+            card._barData.fiveHour = { pct: fiveHourUtil, resetTime: fiveHourReset };
             updateWindowBar(card.fiveHourBar, fiveHourUtil, fiveHourReset, false);
             hasWindowBars = true;
         } else {
+            card._barData.fiveHour = null;
             card.fiveHourBar.container.hide();
         }
 
         if (sevenDayUtil !== null) {
+            card._barData.sevenDay = { pct: sevenDayUtil, resetTime: sevenDayReset };
             updateWindowBar(card.sevenDayBar, sevenDayUtil, sevenDayReset, true);
             hasWindowBars = true;
         } else {
+            card._barData.sevenDay = null;
             card.sevenDayBar.container.hide();
         }
 
@@ -565,19 +661,35 @@ class UsageTuiIndicator extends PanelMenu.Button {
         if (!hasWindowBars) {
             if (usagePercent !== null && usagePercent !== undefined) {
                 let pct = usagePercent;
-                let width = Math.round(pct * 2); // Max 200px
                 let color = getProgressColor(pct);
-                card.progressFill.style = `
-                    background-color: ${color};
-                    border-radius: 2px;
-                    height: 5px;
-                    width: ${width}px;
-                `;
+
+                // Store bar data for refresh on tab switch
+                card._barData.progress = { pct: pct };
+
+                // Update label immediately
                 card.progressLabel.text = `${pct.toFixed(1)}%`;
+
+                // Defer width calculation until after layout
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    let barBgWidth = card.progressBg ? card.progressBg.get_width() : 0;
+                    if (barBgWidth > 0) {
+                        let width = Math.round((pct / 100) * barBgWidth);
+                        card.progressFill.style = `
+                            background-color: ${color};
+                            border-radius: 3px;
+                            height: 6px;
+                            width: ${width}px;
+                        `;
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
             } else {
-                card.progressFill.style = 'background-color: #888; border-radius: 2px; height: 5px; width: 0px;';
+                card._barData.progress = null;
+                card.progressFill.style = 'background-color: #555; border-radius: 3px; height: 6px; width: 0px;';
                 card.progressLabel.text = '';
             }
+        } else {
+            card._barData.progress = null;
         }
         
         // Update cost or quota info
@@ -730,12 +842,11 @@ class UsageTuiIndicator extends PanelMenu.Button {
         let totalCost = 0;
         let hasCostData = false;
         let configuredProviders = 0;
-        
-        // Update provider cards
-        const providerOrder = ['claude', 'openai', 'openrouter', 'copilot', 'codex'];
+
+        // Sort providers by preferred order
         const entries = Object.entries(this._usageData).sort((a, b) => {
-            const aIndex = providerOrder.indexOf(a[0]);
-            const bIndex = providerOrder.indexOf(b[0]);
+            const aIndex = this._providerOrder.indexOf(a[0]);
+            const bIndex = this._providerOrder.indexOf(b[0]);
             const aRank = aIndex === -1 ? 999 : aIndex;
             const bRank = bIndex === -1 ? 999 : bIndex;
             if (aRank !== bRank) {
@@ -744,9 +855,24 @@ class UsageTuiIndicator extends PanelMenu.Button {
             return a[0].localeCompare(b[0]);
         });
 
+        // Create tabs for providers that don't have them yet
+        for (let [providerName] of entries) {
+            if (!this._providerTabs[providerName]) {
+                let tabData = this._createTab(providerName);
+                this._providerTabs[providerName] = tabData;
+                this._tabBar.add_child(tabData.button);
+            }
+        }
+
+        // Update provider cards
+        let firstProvider = null;
         for (let [providerName, data] of entries) {
+            if (!firstProvider) {
+                firstProvider = providerName;
+            }
+
             this._updateProviderCard(providerName, data);
-            
+
             // Provider has cost data
             if (data.metrics && data.metrics.cost !== null && data.metrics.cost !== undefined) {
                 totalCost += data.metrics.cost;
@@ -758,7 +884,12 @@ class UsageTuiIndicator extends PanelMenu.Button {
                 configuredProviders++;
             }
         }
-        
+
+        // Set initial active provider if none set
+        if (!this._activeProvider && firstProvider) {
+            this._switchToProvider(firstProvider);
+        }
+
         // Update panel label
         if (hasCostData) {
             this._panelLabel.set_text(`$${totalCost.toFixed(2)}`);
@@ -767,7 +898,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
         } else {
             this._panelLabel.set_text('N/A');
         }
-        
+
         // Update timestamp
         if (this._lastUpdated) {
             let timeString = this._lastUpdated.toLocaleTimeString('en-US', {
