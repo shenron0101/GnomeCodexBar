@@ -5,6 +5,9 @@
   "version": 2,
   "shell-version": ["45", "46", "47", "48"],
   "url": "https://github.com/OmegAshEnr01n/GnomeCodexBar",
+  "donations": {
+    "github": "OmegAshEnr01n"
+  },
   "settings-schema": "org.gnome.shell.extensions.usage-tui",
   "gettext-domain": "usage-tui"
 }
