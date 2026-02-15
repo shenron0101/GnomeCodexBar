@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "usage-tui"
-version = "0.1.0"
+version = "0.1.1"
 description = "Multi-provider usage metrics TUI for Claude, OpenAI, and GitHub Copilot"
 readme = "README.md"
 requires-python = ">=3.10"

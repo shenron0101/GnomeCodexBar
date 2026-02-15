@@ -2,7 +2,7 @@
   "uuid": "usage-tui@gnome.codexbar",
   "name": "Usage TUI Monitor",
   "description": "Display AI service usage metrics (Claude, OpenAI, OpenRouter, Copilot, Codex) in the GNOME top panel. Track your API quotas and credits at a glance.",
-  "version": 2,
+  "version": 3,
   "shell-version": ["45", "46", "47", "48"],
   "url": "https://github.com/OmegAshEnr01n/GnomeCodexBar",
   "donations": {
