@@ -282,7 +282,11 @@ Note: Token needs 'read:user' scope."""
         Expected structure:
         {
             "quotaSnapshots": {
-                "premiumInteractions": {"percentRemaining": 80},
+                "premiumInteractions": {
+                    "percentRemaining": 10.8,
+                    "quota_remaining": 162,
+                    "entitlement": 1500
+                },
                 "chat": {"percentRemaining": 90}
             },
             "copilotPlan": "pro"
@@ -293,28 +297,33 @@ Note: Token needs 'read:user' scope."""
         def _get_snapshot(key_camel: str, key_snake: str) -> dict:
             return quota.get(key_camel) or quota.get(key_snake) or {}
 
-        def _get_percent(snapshot: dict) -> float | None:
-            # Try direct percentage fields first
-            percent = snapshot.get("percentRemaining") or snapshot.get("percent_remaining")
+        def _extract_quota_data(snapshot: dict) -> tuple[float | None, float | None]:
+            """
+            Extract remaining and limit from snapshot.
 
-            # Calculate from quota if percentage not available
-            if percent is None:
-                entitlement = snapshot.get("entitlement")
-                remaining = snapshot.get("quota_remaining") or snapshot.get("remaining")
-                if entitlement and remaining is not None:
-                    try:
-                        percent = (float(remaining) / float(entitlement)) * 100
-                    except (TypeError, ValueError, ZeroDivisionError):
-                        return None
+            Returns:
+                Tuple of (remaining, limit) - actual credit numbers if available,
+                otherwise percentage-based values
+            """
+            # Try to get actual credit numbers first
+            entitlement = snapshot.get("entitlement")
+            quota_remaining = snapshot.get("quota_remaining") or snapshot.get("remaining")
 
-            # Convert to float
-            if percent is not None:
+            if entitlement is not None and quota_remaining is not None:
                 try:
-                    return float(percent)
+                    return (float(quota_remaining), float(entitlement))
                 except (TypeError, ValueError):
                     pass
 
-            return None
+            # Fall back to percentage if available
+            percent = snapshot.get("percentRemaining") or snapshot.get("percent_remaining")
+            if percent is not None:
+                try:
+                    return (float(percent), 100.0)
+                except (TypeError, ValueError):
+                    pass
+
+            return (None, None)
 
         # Try quota snapshots in priority order
         snapshots_to_try = [
@@ -323,14 +332,13 @@ Note: Token needs 'read:user' scope."""
             ("completions", "completions"),
         ]
 
-        percent_remaining = None
+        remaining = None
+        limit = None
         for camel, snake in snapshots_to_try:
             snapshot = _get_snapshot(camel, snake)
-            percent_remaining = _get_percent(snapshot)
-            if percent_remaining is not None:
+            remaining, limit = _extract_quota_data(snapshot)
+            if remaining is not None:
                 break
-
-        remaining = percent_remaining
 
         # Parse reset date from various possible field names
         reset_raw = (
@@ -351,7 +359,7 @@ Note: Token needs 'read:user' scope."""
 
         metrics = UsageMetrics(
             remaining=remaining,
-            limit=100.0,  # Percentage-based
+            limit=limit,
             reset_at=reset_at,
             cost=None,
             requests=None,
