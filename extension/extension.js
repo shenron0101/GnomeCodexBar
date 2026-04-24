@@ -631,8 +631,6 @@ class UsageTuiIndicator extends PanelMenu.Button {
     }
 
     _refreshData() {
-        this._panelLabel.set_text('...');
-
         try {
             let launcher = new Gio.SubprocessLauncher({
                 flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
