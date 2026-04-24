@@ -7,9 +7,11 @@ import GObject from 'gi://GObject';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const REFRESH_INTERVAL_SECONDS = 300;
 const ENV_FILE_PATH = GLib.get_home_dir() + '/.config/usage-tui/env';
+const PROVIDER_ABBR = {claude: 'C', openrouter: 'OR', copilot: 'CO', codex: 'CX'};
 
 /**
  * Resolve the usage-tui binary path.
@@ -92,8 +94,12 @@ function _getProgressClass(pct) {
 const UsageTuiIndicator = GObject.registerClass(
 class UsageTuiIndicator extends PanelMenu.Button {
 
-    _init() {
+    _init(extension) {
         super._init(0.0, 'usage-tui Monitor', false);
+
+        this._extension = extension;
+        this._settings = extension.getSettings();
+        this._settingsChangedId = this._settings.connect('changed', () => this._updateUI());
 
         this._timeout = null;
         this._usageData = {};
@@ -192,6 +198,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
             this._openTerminalWithCommand(`${_getUsageTuiPath()} tui`);
         });
         this.menu.addMenuItem(openTuiItem);
+
+        let settingsItem = new PopupMenu.PopupMenuItem('Open Settings');
+        settingsItem.connect('activate', () => this._extension.openPreferences());
+        this.menu.addMenuItem(settingsItem);
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
@@ -616,6 +626,27 @@ class UsageTuiIndicator extends PanelMenu.Button {
         }
     }
 
+    _getUtilizationLabel() {
+        const included = this._settings.get_strv('included-providers');
+        const showPrefix = this._settings.get_boolean('show-provider-prefix');
+        let parts = [];
+        for (let name of this._providerOrder) {
+            if (!included.includes(name)) continue;
+            let data = this._usageData[name];
+            if (!data || !data.raw) continue;
+            let pct = null;
+            if (data.raw.five_hour && data.raw.five_hour.utilization != null)
+                pct = data.raw.five_hour.utilization;
+            else if (data.raw.rate_limit?.primary_window?.used_percent != null)
+                pct = data.raw.rate_limit.primary_window.used_percent;
+            if (pct != null) {
+                let abbr = PROVIDER_ABBR[name] ?? name.slice(0, 2).toUpperCase();
+                parts.push(showPrefix ? `${abbr}:${pct.toFixed(0)}%` : `${pct.toFixed(0)}%`);
+            }
+        }
+        return parts.length > 0 ? parts.join(' ') : 'N/A';
+    }
+
     _startAutoRefresh() {
         if (this._timeout)
             GLib.source_remove(this._timeout);
@@ -719,12 +750,21 @@ class UsageTuiIndicator extends PanelMenu.Button {
         if (!this._activeProvider && firstProvider)
             this._switchToProvider(firstProvider);
 
-        if (hasCostData)
-            this._panelLabel.set_text(`$${totalCost.toFixed(2)}`);
-        else if (configuredProviders > 0)
-            this._panelLabel.set_text(`${configuredProviders} active`);
+        if (this._settings.get_boolean('show-panel-icon'))
+            this._icon.show();
         else
+            this._icon.hide();
+
+        const displayMode = this._settings.get_string('display-mode');
+        if (displayMode === 'utilization') {
+            this._panelLabel.set_text(this._getUtilizationLabel());
+        } else if (hasCostData) {
+            this._panelLabel.set_text(`$${totalCost.toFixed(2)}`);
+        } else if (configuredProviders > 0) {
+            this._panelLabel.set_text(`${configuredProviders} active`);
+        } else {
             this._panelLabel.set_text('N/A');
+        }
 
         if (this._lastUpdated) {
             let timeString = this._lastUpdated.toLocaleTimeString('en-US', {
@@ -753,6 +793,11 @@ class UsageTuiIndicator extends PanelMenu.Button {
     }
 
     destroy() {
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
         if (this._timeout) {
             GLib.source_remove(this._timeout);
             this._timeout = null;
@@ -762,14 +807,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
     }
 });
 
-export default class UsageTuiExtension {
-    constructor() {
-        this._indicator = null;
-    }
-
+export default class UsageTuiExtension extends Extension {
     enable() {
         console.debug('usage-tui: Enabling extension');
-        this._indicator = new UsageTuiIndicator();
+        this._indicator = new UsageTuiIndicator(this);
         Main.panel.addToStatusArea('usage-tui', this._indicator, 0, 'right');
     }
 

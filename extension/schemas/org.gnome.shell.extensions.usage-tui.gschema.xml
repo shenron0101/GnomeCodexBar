@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.usage-tui"
+          path="/org/gnome/shell/extensions/usage-tui/">
+    <key name="display-mode" type="s">
+      <default>'cost'</default>
+      <summary>Panel display mode</summary>
+    </key>
+    <key name="included-providers" type="as">
+      <default>['claude', 'openrouter', 'copilot', 'codex']</default>
+      <summary>Providers shown in the panel label</summary>
+    </key>
+    <key name="show-panel-icon" type="b">
+      <default>true</default>
+      <summary>Show icon in panel button</summary>
+    </key>
+    <key name="show-provider-prefix" type="b">
+      <default>true</default>
+      <summary>Show provider prefix (C:, CX:) before percentages in panel label</summary>
+    </key>
+  </schema>
+</schemalist>
