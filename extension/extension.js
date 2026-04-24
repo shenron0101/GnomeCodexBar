@@ -11,10 +11,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 const REFRESH_INTERVAL_SECONDS = 300;
 const ENV_FILE_PATH = GLib.get_home_dir() + '/.config/usage-tui/env';
 
-/**
- * Resolve the usage-tui binary path.
- * Checks PATH first, then USAGE_TUI_PATH from the env file.
- */
+// GLib.find_program_in_path uses GNOME Shell's PATH, which typically omits
+// ~/.local/bin — the standard `pip install --user` destination. Check common
+// locations explicitly before falling back.
 function _getUsageTuiPath() {
     let found = GLib.find_program_in_path('usage-tui');
     if (found)
@@ -23,6 +22,15 @@ function _getUsageTuiPath() {
     let env = _loadEnvFromFile();
     if (env.USAGE_TUI_PATH)
         return env.USAGE_TUI_PATH;
+
+    const fallbacks = [
+        GLib.get_home_dir() + '/.local/bin/usage-tui',
+        '/usr/local/bin/usage-tui',
+    ];
+    for (let path of fallbacks) {
+        if (GLib.file_test(path, GLib.FileTest.IS_EXECUTABLE))
+            return path;
+    }
 
     return 'usage-tui';
 }
