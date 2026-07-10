@@ -24,9 +24,10 @@ from textual.widgets import (
 from usage_tui.cache import ResultCache
 from usage_tui.config import config
 from usage_tui.providers import (
-    ClaudeOAuthProvider,
+    ClaudeProvider,
     CodexProvider,
     CopilotProvider,
+    GeminiProvider,
     OpenAIUsageProvider,
     OpenRouterUsageProvider,
 )
@@ -158,15 +159,46 @@ class ProviderCard(Static):
             return
 
         # Update status line with last update time
-        age = datetime.now(timezone.utc) - result.updated_at.replace(tzinfo=timezone.utc)
+        age = datetime.now(timezone.utc) - result.updated_at.astimezone(timezone.utc)
         age_str = self._format_age(age.total_seconds())
         status_line.update(f"Updated {age_str} ago | Window: {result.window.value}")
 
         # Build metrics display
         metrics = result.metrics
+        raw = result.raw or {}
 
-        # Usage bar for Claude (has limit/remaining)
-        if metrics.usage_percent is not None:
+        # Gemini: render Pro and Flash bars from raw data
+        if "gemini_pro" in raw or "gemini_flash" in raw:
+            for key, label in [("gemini_pro", "Pro"), ("gemini_flash", "Flash"), ("claude", "Claude")]:
+                entry = raw.get(key)
+                if not entry:
+                    continue
+                pct = entry.get("utilization", 0.0)
+                bar = ProgressBar(total=100, show_eta=False)
+                bar.progress = pct
+                metrics_container.mount(Label(label, classes="metric-label"))
+                metrics_container.mount(bar)
+                pct_label = Label(f"{pct:.1f}% used", classes="metric-value")
+                if pct > 80:
+                    pct_label.add_class("warning")
+                if pct > 95:
+                    pct_label.add_class("error")
+                metrics_container.mount(pct_label)
+                reset_time = entry.get("reset_time")
+                if reset_time:
+                    reset_dt = datetime.fromisoformat(reset_time)
+                    delta = reset_dt - datetime.now(timezone.utc)
+                    if delta.total_seconds() > 0:
+                        reset_str = self._format_duration(delta.total_seconds())
+                        metrics_container.mount(
+                            Horizontal(
+                                Label("Resets in:", classes="metric-label"),
+                                Label(reset_str, classes="metric-value"),
+                                classes="metric-row",
+                            )
+                        )
+        elif metrics.usage_percent is not None:
+            # Usage bar for providers with limit/remaining (Claude, Codex, etc.)
             pct = metrics.usage_percent
             bar = ProgressBar(total=100, show_eta=False)
             bar.progress = pct
@@ -366,11 +398,12 @@ class UsageTUI(App):
         super().__init__()
         self.cache = ResultCache()
         self.providers: dict[ProviderName, BaseProvider] = {
-            ProviderName.CLAUDE: ClaudeOAuthProvider(),
+            ProviderName.CLAUDE: ClaudeProvider(),
             ProviderName.OPENAI: OpenAIUsageProvider(),
             ProviderName.OPENROUTER: OpenRouterUsageProvider(),
             ProviderName.COPILOT: CopilotProvider(),
             ProviderName.CODEX: CodexProvider(),
+            ProviderName.GEMINI: GeminiProvider(),
         }
         self.results: dict[ProviderName, ProviderResult | None] = {}
 
@@ -391,6 +424,7 @@ class UsageTUI(App):
                         ProviderCard(ProviderName.OPENROUTER, id="card-openrouter"),
                         ProviderCard(ProviderName.COPILOT, id="card-copilot"),
                         ProviderCard(ProviderName.CODEX, id="card-codex"),
+                        ProviderCard(ProviderName.GEMINI, id="card-gemini"),
                         id="cards-container",
                     )
                 with TabPane("Raw JSON", id="json-tab"):

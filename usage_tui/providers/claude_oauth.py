@@ -17,7 +17,7 @@ from usage_tui.providers.base import (
 )
 
 
-class ClaudeOAuthProvider(BaseProvider):
+class ClaudeProvider(BaseProvider):
     """
     Provider for Claude Code OAuth usage metrics.
 

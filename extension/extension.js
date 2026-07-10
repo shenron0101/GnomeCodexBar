@@ -101,7 +101,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
         this._providerTabs = {};
         this._lastUpdated = null;
         this._activeProvider = null;
-        this._providerOrder = ['claude', 'openrouter', 'copilot', 'codex'];
+        this._providerOrder = ['claude', 'gemini', 'openrouter', 'copilot', 'codex'];
 
         this._buildPanelButton();
         this._buildPopupMenu();
@@ -209,7 +209,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
         });
 
         let tabLabel = new St.Label({
-            text: providerName.toUpperCase(),
+            text: providerName === 'gemini' ? 'ANTIGRAVITY' : providerName.toUpperCase(),
             style_class: `usage-tui-tab-label usage-tui-tab-label-${providerName}`,
         });
 
@@ -355,9 +355,17 @@ class UsageTuiIndicator extends PanelMenu.Button {
 
         let fiveHourBar = createWindowBar('5h');
         let sevenDayBar = createWindowBar('7d');
+        let proBar = createWindowBar('Pro');
+        let flashBar = createWindowBar('Flash');
+        let claudeBar = createWindowBar('Claude');
+        let openSourceBar = createWindowBar('GPT-OSS');
 
         windowBars.add_child(fiveHourBar.container);
         windowBars.add_child(sevenDayBar.container);
+        windowBars.add_child(proBar.container);
+        windowBars.add_child(flashBar.container);
+        windowBars.add_child(claudeBar.container);
+        windowBars.add_child(openSourceBar.container);
         windowBars.hide();
 
         container.add_child(windowBars);
@@ -393,6 +401,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
             windowBars,
             fiveHourBar,
             sevenDayBar,
+            proBar,
+            flashBar,
+            claudeBar,
+            openSourceBar,
             costLabel,
             byokLabel,
             requestsLabel,
@@ -421,6 +433,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
             card.windowBars.hide();
             card.fiveHourBar.container.hide();
             card.sevenDayBar.container.hide();
+            card.proBar.container.hide();
+            card.flashBar.container.hide();
+            card.claudeBar.container.hide();
+            card.openSourceBar.container.hide();
             card.progressContainer.show();
             return;
         }
@@ -438,6 +454,15 @@ class UsageTuiIndicator extends PanelMenu.Button {
             : (raw.rate_limit && raw.rate_limit.secondary_window && raw.rate_limit.secondary_window.used_percent !== null && raw.rate_limit.secondary_window.used_percent !== undefined
                 ? raw.rate_limit.secondary_window.used_percent
                 : null);
+
+        const proUtil = raw.gemini_pro && raw.gemini_pro.utilization !== null && raw.gemini_pro.utilization !== undefined
+            ? raw.gemini_pro.utilization : null;
+        const flashUtil = raw.gemini_flash && raw.gemini_flash.utilization !== null && raw.gemini_flash.utilization !== undefined
+            ? raw.gemini_flash.utilization : null;
+        const claudeUtil = raw.claude && raw.claude.utilization !== null && raw.claude.utilization !== undefined
+            ? raw.claude.utilization : null;
+        const openSourceUtil = raw.gpt_oss && raw.gpt_oss.utilization !== null && raw.gpt_oss.utilization !== undefined
+            ? raw.gpt_oss.utilization : null;
 
         const updateWindowBar = (bar, pct, resetTime, useDays) => {
             bar.pctLabel.text = `${pct.toFixed(1)}%`;
@@ -484,6 +509,10 @@ class UsageTuiIndicator extends PanelMenu.Button {
 
         let fiveHourReset = null;
         let sevenDayReset = null;
+        let proReset = null;
+        let flashReset = null;
+        let claudeReset = null;
+        let openSourceReset = null;
 
         if (raw.five_hour && raw.five_hour.resets_at)
             fiveHourReset = raw.five_hour.resets_at;
@@ -494,6 +523,15 @@ class UsageTuiIndicator extends PanelMenu.Button {
             fiveHourReset = raw.rate_limit.primary_window.reset_at;
         if (raw.rate_limit && raw.rate_limit.secondary_window && raw.rate_limit.secondary_window.reset_at)
             sevenDayReset = raw.rate_limit.secondary_window.reset_at;
+
+        if (raw.gemini_pro && raw.gemini_pro.reset_time)
+            proReset = raw.gemini_pro.reset_time;
+        if (raw.gemini_flash && raw.gemini_flash.reset_time)
+            flashReset = raw.gemini_flash.reset_time;
+        if (raw.claude && raw.claude.reset_time)
+            claudeReset = raw.claude.reset_time;
+        if (raw.gpt_oss && raw.gpt_oss.reset_time)
+            openSourceReset = raw.gpt_oss.reset_time;
 
         let hasWindowBars = false;
         if (fiveHourUtil !== null) {
@@ -512,6 +550,42 @@ class UsageTuiIndicator extends PanelMenu.Button {
         } else {
             card._barData.sevenDay = null;
             card.sevenDayBar.container.hide();
+        }
+
+        if (proUtil !== null) {
+            card._barData.pro = {pct: proUtil, resetTime: proReset};
+            updateWindowBar(card.proBar, proUtil, proReset, false);
+            hasWindowBars = true;
+        } else {
+            card._barData.pro = null;
+            card.proBar.container.hide();
+        }
+
+        if (flashUtil !== null) {
+            card._barData.flash = {pct: flashUtil, resetTime: flashReset};
+            updateWindowBar(card.flashBar, flashUtil, flashReset, false);
+            hasWindowBars = true;
+        } else {
+            card._barData.flash = null;
+            card.flashBar.container.hide();
+        }
+
+        if (openSourceUtil !== null) {
+            card._barData.openSource = {pct: openSourceUtil, resetTime: openSourceReset};
+            updateWindowBar(card.openSourceBar, openSourceUtil, openSourceReset, false);
+            hasWindowBars = true;
+        } else {
+            card._barData.openSource = null;
+            card.openSourceBar.container.hide();
+        }
+
+        if (claudeUtil !== null) {
+            card._barData.claude = {pct: claudeUtil, resetTime: claudeReset};
+            updateWindowBar(card.claudeBar, claudeUtil, claudeReset, false);
+            hasWindowBars = true;
+        } else {
+            card._barData.claude = null;
+            card.claudeBar.container.hide();
         }
 
         if (hasWindowBars) {

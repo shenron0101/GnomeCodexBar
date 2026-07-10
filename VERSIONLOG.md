@@ -2,6 +2,21 @@
 
 ## Extension Versions
 
+### v1.0.3 (2026-03-29) - Extension version 5
+**Fixed**
+- Refactored `extension.js` to correctly display native Pro and Flash dual-progress bars for Google Gemini, omitting incorrect 5h/7d mappings logic entirely.
+
+**Technical Changes**
+- Extension metadata version: 5
+
+### v1.0.2 (2026-03-29) - Extension version 4
+**Added**
+- Added Gemini support!
+- Displays dynamic scaled quota percentage correctly for Gemini tokens via `usage_tui`
+
+**Technical Changes**
+- Extension metadata version: 4
+
 ### v1.0.1 (2026-02-15) - Extension version 3
 **Fixed**
 - Copilot provider now displays actual credit numbers (e.g., 162/1500) instead of percentages (10.8/100)
@@ -24,6 +39,15 @@
 ---
 
 ## usage-tui Python Package Versions
+
+### v0.1.2 (2026-03-29)
+**Added**
+- Support for Gemini quotas and usage tracking mapping local daemon logs
+- Request tally mapped from Gemini model context counts correctly combining Pro and Flash requests
+- Dual-bar unified tab rendering both Google Gemini Pro and Gemini Flash inside a single view
+
+**Fixed**
+- Renamed `ClaudeOAuthProvider` to `ClaudeProvider` for consistency across OpenCode providers
 
 ### v0.1.1 (2026-02-15)
 **Fixed**

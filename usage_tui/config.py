@@ -76,6 +76,7 @@ class Config:
         ProviderName.OPENROUTER: "OPENROUTER_API_KEY",
         ProviderName.COPILOT: "GITHUB_TOKEN",
         ProviderName.CODEX: "CODEX_ACCESS_TOKEN",
+        ProviderName.GEMINI: "ANTIGRAVITY_ACCOUNTS_PATH",
     }
 
     # Provider descriptions
@@ -109,6 +110,12 @@ class Config:
             "description": "OpenAI Codex usage via ChatGPT backend",
             "official": False,
             "note": "Reads credentials from ~/.codex/auth.json",
+        },
+        ProviderName.GEMINI: {
+            "name": "Google Gemini",
+            "description": "Google Gemini (antigravity) quota",
+            "official": False,
+            "note": "Reads credentials from ~/.config/opencode/antigravity-accounts.json",
         },
     }
 
@@ -157,19 +164,21 @@ class Config:
         """
         # Import providers lazily to avoid circular imports
         from usage_tui.providers import (
-            ClaudeOAuthProvider,
+            ClaudeProvider,
             OpenAIUsageProvider,
             OpenRouterUsageProvider,
             CopilotProvider,
             CodexProvider,
+            GeminiProvider,
         )
 
         provider_map = {
-            ProviderName.CLAUDE: ClaudeOAuthProvider,
+            ProviderName.CLAUDE: ClaudeProvider,
             ProviderName.OPENAI: OpenAIUsageProvider,
             ProviderName.OPENROUTER: OpenRouterUsageProvider,
             ProviderName.COPILOT: CopilotProvider,
             ProviderName.CODEX: CodexProvider,
+            ProviderName.GEMINI: GeminiProvider,
         }
 
         provider_class = provider_map.get(provider)
