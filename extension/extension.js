@@ -89,6 +89,18 @@ function _getProgressClass(pct) {
     return 'usage-tui-progress-danger';
 }
 
+function _setProgressWidth(fill, background, pct) {
+    let attempts = 0;
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+        const width = background.get_width();
+        if (width > 0) {
+            fill.set_width(Math.round((pct / 100) * width));
+            return GLib.SOURCE_REMOVE;
+        }
+        return ++attempts < 10 ? GLib.SOURCE_CONTINUE : GLib.SOURCE_REMOVE;
+    });
+}
+
 const UsageTuiIndicator = GObject.registerClass(
 class UsageTuiIndicator extends PanelMenu.Button {
 
@@ -101,7 +113,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
         this._providerTabs = {};
         this._lastUpdated = null;
         this._activeProvider = null;
-        this._providerOrder = ['claude', 'openrouter', 'copilot', 'codex'];
+        this._providerOrder = ['claude', 'google', 'openrouter', 'copilot', 'codex'];
 
         this._buildPanelButton();
         this._buildPopupMenu();
@@ -209,7 +221,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
         });
 
         let tabLabel = new St.Label({
-            text: providerName.toUpperCase(),
+            text: providerName === 'google' ? 'ANTIGRAVITY' : providerName.toUpperCase(),
             style_class: `usage-tui-tab-label usage-tui-tab-label-${providerName}`,
         });
 
@@ -355,9 +367,20 @@ class UsageTuiIndicator extends PanelMenu.Button {
 
         let fiveHourBar = createWindowBar('5h');
         let sevenDayBar = createWindowBar('7d');
+        const googlePools = [
+            ['gemini_pro', 'Pro'],
+            ['gemini_flash', 'Flash'],
+            ['claude', 'Claude'],
+            ['gpt_oss', 'GPT-OSS'],
+        ];
+        const googleBars = providerName === 'google'
+            ? Object.fromEntries(googlePools.map(([key, label]) => [key, createWindowBar(label)]))
+            : {};
 
         windowBars.add_child(fiveHourBar.container);
         windowBars.add_child(sevenDayBar.container);
+        for (const {container} of Object.values(googleBars))
+            windowBars.add_child(container);
         windowBars.hide();
 
         container.add_child(windowBars);
@@ -393,6 +416,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
             windowBars,
             fiveHourBar,
             sevenDayBar,
+            googleBars,
             costLabel,
             byokLabel,
             requestsLabel,
@@ -421,6 +445,8 @@ class UsageTuiIndicator extends PanelMenu.Button {
             card.windowBars.hide();
             card.fiveHourBar.container.hide();
             card.sevenDayBar.container.hide();
+            for (const {container} of Object.values(card.googleBars))
+                container.hide();
             card.progressContainer.show();
             return;
         }
@@ -428,29 +454,28 @@ class UsageTuiIndicator extends PanelMenu.Button {
         card.errorLabel.hide();
 
         const raw = data.raw || {};
+        const rateWindows = [
+            raw.rate_limit?.primary_window,
+            raw.rate_limit?.secondary_window,
+        ].filter(Boolean);
+        const shortRateWindow = rateWindows.find(window => window.limit_window_seconds < 24 * 60 * 60);
+        const weeklyRateWindow = rateWindows.find(window => window.limit_window_seconds >= 24 * 60 * 60);
         const fiveHourUtil = raw.five_hour && raw.five_hour.utilization !== null && raw.five_hour.utilization !== undefined
             ? raw.five_hour.utilization
-            : (raw.rate_limit && raw.rate_limit.primary_window && raw.rate_limit.primary_window.used_percent !== null && raw.rate_limit.primary_window.used_percent !== undefined
-                ? raw.rate_limit.primary_window.used_percent
+            : (shortRateWindow && shortRateWindow.used_percent !== null && shortRateWindow.used_percent !== undefined
+                ? shortRateWindow.used_percent
                 : null);
         const sevenDayUtil = raw.seven_day && raw.seven_day.utilization !== null && raw.seven_day.utilization !== undefined
             ? raw.seven_day.utilization
-            : (raw.rate_limit && raw.rate_limit.secondary_window && raw.rate_limit.secondary_window.used_percent !== null && raw.rate_limit.secondary_window.used_percent !== undefined
-                ? raw.rate_limit.secondary_window.used_percent
+            : (weeklyRateWindow && weeklyRateWindow.used_percent !== null && weeklyRateWindow.used_percent !== undefined
+                ? weeklyRateWindow.used_percent
                 : null);
 
         const updateWindowBar = (bar, pct, resetTime, useDays) => {
             bar.pctLabel.text = `${pct.toFixed(1)}%`;
             bar.barFill.style_class = `usage-tui-progress-fill ${_getProgressClass(pct)}`;
 
-            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                let barBgWidth = bar.barBg.get_width();
-                if (barBgWidth > 0) {
-                    let width = Math.round((pct / 100) * barBgWidth);
-                    bar.barFill.set_width(width);
-                }
-                return GLib.SOURCE_REMOVE;
-            });
+            _setProgressWidth(bar.barFill, bar.barBg, pct);
 
             if (resetTime) {
                 let resetDate;
@@ -484,16 +509,15 @@ class UsageTuiIndicator extends PanelMenu.Button {
 
         let fiveHourReset = null;
         let sevenDayReset = null;
-
         if (raw.five_hour && raw.five_hour.resets_at)
             fiveHourReset = raw.five_hour.resets_at;
         if (raw.seven_day && raw.seven_day.resets_at)
             sevenDayReset = raw.seven_day.resets_at;
 
-        if (raw.rate_limit && raw.rate_limit.primary_window && raw.rate_limit.primary_window.reset_at)
-            fiveHourReset = raw.rate_limit.primary_window.reset_at;
-        if (raw.rate_limit && raw.rate_limit.secondary_window && raw.rate_limit.secondary_window.reset_at)
-            sevenDayReset = raw.rate_limit.secondary_window.reset_at;
+        if (shortRateWindow?.reset_at)
+            fiveHourReset = shortRateWindow.reset_at;
+        if (weeklyRateWindow?.reset_at)
+            sevenDayReset = weeklyRateWindow.reset_at;
 
         let hasWindowBars = false;
         if (fiveHourUtil !== null) {
@@ -512,6 +536,18 @@ class UsageTuiIndicator extends PanelMenu.Button {
         } else {
             card._barData.sevenDay = null;
             card.sevenDayBar.container.hide();
+        }
+
+        for (const [key, bar] of Object.entries(card.googleBars)) {
+            const pool = raw[key];
+            if (pool?.utilization !== null && pool?.utilization !== undefined) {
+                card._barData[key] = {pct: pool.utilization, resetTime: pool.reset_time};
+                updateWindowBar(bar, pool.utilization, pool.reset_time, false);
+                hasWindowBars = true;
+            } else {
+                card._barData[key] = null;
+                bar.container.hide();
+            }
         }
 
         if (hasWindowBars) {
@@ -538,14 +574,7 @@ class UsageTuiIndicator extends PanelMenu.Button {
                 card.progressLabel.text = `${pct.toFixed(1)}%`;
                 card.progressFill.style_class = `usage-tui-progress-fill ${_getProgressClass(pct)}`;
 
-                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                    let barBgWidth = card.progressBg ? card.progressBg.get_width() : 0;
-                    if (barBgWidth > 0) {
-                        let width = Math.round((pct / 100) * barBgWidth);
-                        card.progressFill.set_width(width);
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
+                _setProgressWidth(card.progressFill, card.progressBg, pct);
             } else {
                 card._barData.progress = null;
                 card.progressFill.style_class = 'usage-tui-progress-fill usage-tui-progress-none';

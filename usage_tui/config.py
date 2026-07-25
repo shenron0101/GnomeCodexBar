@@ -110,6 +110,12 @@ class Config:
             "official": False,
             "note": "Reads credentials from ~/.codex/auth.json",
         },
+        ProviderName.GOOGLE: {
+            "name": "Google Antigravity",
+            "description": "Google Antigravity quota",
+            "official": False,
+            "note": "Reads credentials from ~/.config/opencode/antigravity-accounts.json",
+        },
     }
 
     def get_token(self, provider: ProviderName) -> str | None:
@@ -162,6 +168,7 @@ class Config:
             OpenRouterUsageProvider,
             CopilotProvider,
             CodexProvider,
+            GoogleProvider,
         )
 
         provider_map = {
@@ -170,6 +177,7 @@ class Config:
             ProviderName.OPENROUTER: OpenRouterUsageProvider,
             ProviderName.COPILOT: CopilotProvider,
             ProviderName.CODEX: CodexProvider,
+            ProviderName.GOOGLE: GoogleProvider,
         }
 
         provider_class = provider_map.get(provider)

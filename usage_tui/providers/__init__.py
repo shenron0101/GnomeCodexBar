@@ -6,6 +6,7 @@ from usage_tui.providers.openai_usage import OpenAIUsageProvider
 from usage_tui.providers.openrouter import OpenRouterUsageProvider
 from usage_tui.providers.copilot import CopilotProvider
 from usage_tui.providers.codex import CodexProvider
+from usage_tui.providers.google import GoogleProvider
 
 __all__ = [
     "BaseProvider",
@@ -16,4 +17,5 @@ __all__ = [
     "OpenRouterUsageProvider",
     "CopilotProvider",
     "CodexProvider",
+    "GoogleProvider",
 ]

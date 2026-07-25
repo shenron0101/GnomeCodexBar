@@ -14,6 +14,7 @@ from usage_tui.providers import (
     OpenRouterUsageProvider,
     CopilotProvider,
     CodexProvider,
+    GoogleProvider,
 )
 from usage_tui.providers.base import BaseProvider, ProviderError, ProviderName, WindowPeriod
 
@@ -26,6 +27,7 @@ def get_providers() -> dict[ProviderName, BaseProvider]:
         ProviderName.OPENROUTER: OpenRouterUsageProvider(),
         ProviderName.COPILOT: CopilotProvider(),
         ProviderName.CODEX: CodexProvider(),
+        ProviderName.GOOGLE: GoogleProvider(),
     }
 
 
@@ -74,7 +76,7 @@ def main() -> None:
     "--provider",
     "-p",
     default="all",
-    help="Provider to query (claude, openai, openrouter, copilot, codex, all)",
+    help="Provider to query (claude, openai, openrouter, copilot, codex, google, all)",
 )
 @click.option(
     "--window",
@@ -139,7 +141,7 @@ def show(provider: str, window: str, output_json: bool) -> None:
 
 def _print_result(name: ProviderName, result, label: str | None = None) -> None:
     """Print a formatted result."""
-    title = name.value.upper()
+    title = "ANTIGRAVITY" if name is ProviderName.GOOGLE else name.value.upper()
     if label:
         title = f"{title} ({label})"
     click.echo(f"\n{click.style(title, bold=True)}")
@@ -151,8 +153,22 @@ def _print_result(name: ProviderName, result, label: str | None = None) -> None:
 
     m = result.metrics
 
-    # Usage percentage (Claude)
-    if m.usage_percent is not None:
+    # Usage percentage (Claude, Gemini, etc)
+    if result.raw and "gemini_pro" in result.raw and "gemini_flash" in result.raw:
+        pools = (
+            ("gemini_pro", "Pro"),
+            ("gemini_flash", "Flash"),
+            ("claude", "Claude"),
+            ("gpt_oss", "GPT-OSS"),
+        )
+        for key, name_label in pools:
+            if key not in result.raw:
+                continue
+            pct = result.raw[key]["utilization"]
+            color = "green" if pct < 50 else ("yellow" if pct < 80 else "red")
+            bar = _progress_bar(pct)
+            click.echo(f"{name_label:8} {bar} {click.style(f'{pct:.1f}%', fg=color)}")
+    elif m.usage_percent is not None:
         pct = m.usage_percent
         color = "green" if pct < 50 else ("yellow" if pct < 80 else "red")
         bar = _progress_bar(pct)

@@ -2,6 +2,13 @@
 
 ## Extension Versions
 
+### v1.0.2 (2026-07-11) - Extension version 4
+**Added**
+- Added Antigravity quota monitoring for Gemini, Claude, and GPT-OSS pools.
+
+**Technical Changes**
+- Extension metadata version: 4
+
 ### v1.0.1 (2026-02-15) - Extension version 3
 **Fixed**
 - Copilot provider now displays actual credit numbers (e.g., 162/1500) instead of percentages (10.8/100)
@@ -24,6 +31,10 @@
 ---
 
 ## usage-tui Python Package Versions
+
+### v0.1.2 (2026-07-11)
+**Added**
+- Live Google Antigravity quota monitoring for Gemini, Claude, and GPT-OSS pools.
 
 ### v0.1.1 (2026-02-15)
 **Fixed**

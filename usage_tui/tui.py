@@ -27,6 +27,7 @@ from usage_tui.providers import (
     ClaudeOAuthProvider,
     CodexProvider,
     CopilotProvider,
+    GoogleProvider,
     OpenAIUsageProvider,
     OpenRouterUsageProvider,
 )
@@ -371,6 +372,7 @@ class UsageTUI(App):
             ProviderName.OPENROUTER: OpenRouterUsageProvider(),
             ProviderName.COPILOT: CopilotProvider(),
             ProviderName.CODEX: CodexProvider(),
+            ProviderName.GOOGLE: GoogleProvider(),
         }
         self.results: dict[ProviderName, ProviderResult | None] = {}
 
@@ -391,6 +393,7 @@ class UsageTUI(App):
                         ProviderCard(ProviderName.OPENROUTER, id="card-openrouter"),
                         ProviderCard(ProviderName.COPILOT, id="card-copilot"),
                         ProviderCard(ProviderName.CODEX, id="card-codex"),
+                        ProviderCard(ProviderName.GOOGLE, id="card-google"),
                         id="cards-container",
                     )
                 with TabPane("Raw JSON", id="json-tab"):

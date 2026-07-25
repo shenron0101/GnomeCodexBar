@@ -38,6 +38,10 @@
     border-bottom: 2px solid #D4A574;
 }
 
+.usage-tui-tab-active-google {
+    border-bottom: 2px solid #4285F4;
+}
+
 .usage-tui-tab-active-openai {
     border-bottom: 2px solid #74AA9C;
 }
@@ -63,6 +67,10 @@
 
 .usage-tui-tab-label-claude {
     color: #D4A574;
+}
+
+.usage-tui-tab-label-google {
+    color: #4285F4;
 }
 
 .usage-tui-tab-label-openai {
@@ -102,6 +110,10 @@
 
 .usage-tui-provider-claude {
     border-left: 3px solid #D4A574;
+}
+
+.usage-tui-provider-google {
+    border-left: 3px solid #4285F4;
 }
 
 .usage-tui-provider-openai {
